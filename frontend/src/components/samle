@@ -1,0 +1,380 @@
+// import { Space, Button, Popconfirm } from "antd";
+// import {
+//   EditOutlined,
+//   DeleteOutlined,
+//   QuestionCircleOutlined,
+// } from "@ant-design/icons";
+// import type { ColumnsType } from "antd/es/table";
+// import type { Incident, Status, Severity } from "../types/Incident";
+// import {
+//   statusColorMap,
+//   statusLabelMap,
+//   severityColorMap,
+//   severityLabelMap,
+// } from "../constants/colorLabelMappings";
+// import {
+//   statusSortOrder,
+//   severitySortOrder,
+// } from "../constants/sortPriorityMappings";
+// import { ConfirmActionSelect } from "./ConfirmActionSelect";
+// import type { MutationFunction } from "@apollo/client";
+// import dayjs from "dayjs";
+
+// export const getIncidentTableColumns = (
+//   onEdit: (incident: Incident) => void,
+//   updateIncident: MutationFunction<
+//     any,
+//     { id: string; status?: Status; severity?: Severity }
+//   >,
+//   deleteIncident: MutationFunction<any, { id: string }>
+// ): ColumnsType<Incident> => [
+//   {
+//     title: "ID",
+//     key: "rowId",
+//     width: 70,
+//     render: (_: any, __: Incident, index: number) => index + 1,
+//   },
+//   {
+//     title: "Title",
+//     dataIndex: "title",
+//     key: "title",
+//     sorter: (a, b) => a.title.localeCompare(b.title),
+//   },
+//   {
+//     title: "Description",
+//     dataIndex: "description",
+//     key: "description",
+//   },
+//   {
+//     title: "Severity",
+//     dataIndex: "severity",
+//     key: "severity",
+//     width: "150px",
+//     filters: Object.entries(severityLabelMap).map(([key, label]) => ({
+//       text: label,
+//       value: key,
+//     })),
+//     onFilter: (value, record) => record.severity === value,
+//     sorter: (a, b) =>
+//       severitySortOrder[a.severity] - severitySortOrder[b.severity],
+//     render: (severity: Severity, record: Incident) => (
+//       <ConfirmActionSelect
+//         confirmText="Confirm Severity Change?"
+//         value={severity}
+//         options={Object.keys(severityLabelMap) as Severity[]}
+//         labelMap={severityLabelMap}
+//         colorMap={severityColorMap}
+//         onConfirm={(newSeverity: Severity) =>
+//           updateIncident({
+//             variables: { id: record.id, severity: newSeverity },
+//           })
+//         }
+//       />
+//     ),
+//   },
+//   {
+//     title: "Created",
+//     dataIndex: "createdAt",
+//     key: "createdAt",
+//     width: 180,
+//     sorter: (a, b) => Number(a.createdAt) - Number(b.createdAt),
+//     render: (timestamp) =>
+//       dayjs(Number(timestamp)).format("YYYY/MM/DD, HH:mm:ss"),
+//   },
+//   {
+//     title: "Updated",
+//     dataIndex: "updatedAt",
+//     key: "updatedAt",
+//     width: 180,
+//     sorter: (a, b) => Number(a.createdAt) - Number(b.createdAt),
+//     render: (timestamp) =>
+//       dayjs(Number(timestamp)).format("YYYY-MM-DD HH:mm:ss"),
+//   },
+//   {
+//     title: "Status",
+//     dataIndex: "status",
+//     key: "status",
+//     width: "150px",
+//     filters: Object.entries(statusLabelMap).map(([key, label]) => ({
+//       text: label,
+//       value: key,
+//     })),
+//     onFilter: (value, record) => record.status === value,
+//     sorter: (a, b) => statusSortOrder[a.status] - statusSortOrder[b.status],
+//     render: (status: Status, record: Incident) => (
+//       <ConfirmActionSelect
+//         confirmText="Confirm Status Change?"
+//         value={status}
+//         options={Object.keys(statusLabelMap) as Status[]}
+//         labelMap={statusLabelMap}
+//         colorMap={statusColorMap}
+//         onConfirm={(newStatus: Status) =>
+//           updateIncident({
+//             variables: { id: record.id, status: newStatus },
+//           })
+//         }
+//       />
+//     ),
+//   },
+//   {
+//     title: "Actions",
+//     key: "actions",
+//     width: 100,
+//     render: (_: any, record: Incident) => (
+//       <Space size={4}>
+//         <Button
+//           icon={<EditOutlined />}
+//           type="text"
+//           onClick={() => onEdit(record)}
+//         />
+//         <Popconfirm
+//           title="Proceed with deletion?"
+//           onConfirm={async () =>
+//             deleteIncident({ variables: { id: record.id } })
+//           }
+//           okText="Yes"
+//           cancelText="No"
+//           icon={<QuestionCircleOutlined style={{ color: "red" }} />}
+//         >
+//           <Button icon={<DeleteOutlined />} type="text" danger />
+//         </Popconfirm>
+//       </Space>
+//     ),
+//   },
+// ];
+
+// next for 2nd
+
+// import React, { useState } from "react";
+// import { Table, Button, Input, Space, Typography, Select, message } from "antd";
+// import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
+// import { useQuery, useMutation } from "@apollo/client";
+// import { GET_INCIDENTS } from "../graphql/queries";
+// import {
+//   ADD_INCIDENT,
+//   UPDATE_INCIDENT,
+//   DELETE_INCIDENT,
+// } from "../graphql/mutations";
+// import { Incident } from "../types/Incident";
+// import {
+//   AddIncidentVariables,
+//   UpdateIncidentVariables,
+//   DeleteIncidentVariables,
+// } from "../types/graphql";
+// import {
+//   statusLabelMap,
+//   severityLabelMap,
+// } from "../constants/colorLabelMappings";
+// import { getIncidentTableColumns } from "./IncidentsTableColumns";
+// import { IncidentFormDrawer } from "./IncidentFormDrawer";
+// import CenteredSpinner from "./CenteredSpinner";
+// const { Title } = Typography;
+
+// const IncidentsTable: React.FC = () => {
+//   const [searchText, setSearchText] = useState("");
+//   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
+//   const [activeGroup, setActiveGroup] = useState<"status" | "severity" | null>(
+//     null
+//   );
+//   const [currentPage, setCurrentPage] = useState(1);
+//   const [pageSize, setPageSize] = useState(10);
+//   const [editIncident, setEditIncident] = useState<Incident | null>(null);
+//   const [drawerVisible, setDrawerVisible] = useState(false);
+
+//   const { data, loading, refetch } = useQuery(GET_INCIDENTS, {
+//     variables: { page: currentPage, limit: pageSize },
+//     fetchPolicy: "cache-and-network",
+//   });
+
+//   const [addIncident] = useMutation<any, AddIncidentVariables>(ADD_INCIDENT, {
+//     onError: () => message.error("Failed to add incident"),
+//     onCompleted: () => {
+//       message.success("Incident Added");
+//       refetch();
+//     },
+//   });
+
+//   const [updateIncident] = useMutation<any, UpdateIncidentVariables>(
+//     UPDATE_INCIDENT,
+//     {
+//       onError: () => message.error("Failed to update incident"),
+//       onCompleted: () => {
+//         message.success("Incident Updated");
+//         refetch();
+//       },
+//     }
+//   );
+
+//   const [deleteIncident] = useMutation<any, DeleteIncidentVariables>(
+//     DELETE_INCIDENT,
+//     {
+//       onError: () => message.error("Failed to delete incident"),
+//       onCompleted: () => {
+//         message.success("Incident Deleted");
+//         refetch();
+//       },
+//     }
+//   );
+
+//   const handleEditIncident = (incident: Incident) => {
+//     setEditIncident(incident);
+//     setDrawerVisible(true);
+//   };
+
+//   const handleSubmitIncident = (values: Partial<Incident>) => {
+//     if (editIncident) {
+//       updateIncident({ variables: { id: editIncident.id, ...values } });
+//     } else {
+//       addIncident({ variables: values as AddIncidentVariables });
+//     }
+//     setDrawerVisible(false);
+//   };
+
+//   const filteredData =
+//     data?.getIncidents.incidents.filter((incident: Incident) => {
+//       const matchesText = incident.title
+//         .toLowerCase()
+//         .includes(searchText.toLowerCase());
+
+//       const matchesFilter =
+//         selectedFilters.length === 0 ||
+//         selectedFilters.includes(`status:${incident.status}`) ||
+//         selectedFilters.includes(`severity:${incident.severity}`);
+
+//       return matchesText && matchesFilter;
+//     }) || [];
+
+//   const columns = getIncidentTableColumns(
+//     handleEditIncident,
+//     updateIncident,
+//     deleteIncident
+//   );
+
+//   if (loading) return <CenteredSpinner />;
+
+//   return (
+//     <div
+//       style={{
+//         background: "#fff",
+//         padding: "24px",
+//         borderRadius: "10px",
+//         boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+//         zIndex: "1000",
+//         position: "relative",
+//       }}
+//     >
+//       <div
+//         style={{
+//           display: "flex",
+//           flexWrap: "wrap",
+//           gap: "16px",
+//           justifyContent: "space-between",
+//           alignItems: "center",
+//           marginBottom: "16px",
+//         }}
+//       >
+//         <IncidentFormDrawer
+//           visible={drawerVisible}
+//           onClose={() => setDrawerVisible(false)}
+//           initialValues={editIncident || undefined}
+//           isEdit={!!editIncident}
+//           onSubmit={handleSubmitIncident}
+//         />
+
+//         <Title level={4} style={{ color: "#001529", margin: 0 }}>
+//           Incident Control Panel
+//         </Title>
+
+//         <Space wrap>
+//           <Input
+//             placeholder="Search Reports"
+//             prefix={<SearchOutlined />}
+//             value={searchText}
+//             onChange={(e) => setSearchText(e.target.value)}
+//             style={{ width: 220 }}
+//           />
+
+//           <Select
+//             allowClear
+//             mode="multiple"
+//             placeholder="Filter by Status / Severity"
+//             style={{ width: 300 }}
+//             value={selectedFilters}
+//             onChange={(values: string[]) => {
+//               if (values.length === 0) {
+//                 setSelectedFilters([]);
+//                 setActiveGroup(null);
+//                 return;
+//               }
+
+//               const latestValue = values[values.length - 1];
+//               const newGroup = latestValue.split(":")[0] as
+//                 | "status"
+//                 | "severity";
+
+//               if (!activeGroup || newGroup === activeGroup) {
+//                 setSelectedFilters(values);
+//                 setActiveGroup(newGroup);
+//               } else {
+//                 const filtered = values.filter((val) =>
+//                   val.startsWith(newGroup)
+//                 );
+//                 setSelectedFilters(filtered);
+//                 setActiveGroup(newGroup);
+//               }
+//             }}
+//           >
+//             <Select.OptGroup label="Status">
+//               {Object.entries(statusLabelMap).map(([key, label]) => (
+//                 <Select.Option key={`status:${key}`} value={`status:${key}`}>
+//                   {label}
+//                 </Select.Option>
+//               ))}
+//             </Select.OptGroup>
+
+//             <Select.OptGroup label="Severity">
+//               {Object.entries(severityLabelMap).map(([key, label]) => (
+//                 <Select.Option
+//                   key={`severity:${key}`}
+//                   value={`severity:${key}`}
+//                 >
+//                   {label}
+//                 </Select.Option>
+//               ))}
+//             </Select.OptGroup>
+//           </Select>
+
+//           <Button
+//             type="primary"
+//             icon={<PlusOutlined />}
+//             onClick={() => {
+//               setEditIncident(null);
+//               setDrawerVisible(true);
+//             }}
+//           >
+//             New Incident
+//           </Button>
+//         </Space>
+//       </div>
+
+//       <Table
+//         rowKey="id"
+//         columns={columns}
+//         dataSource={filteredData}
+//         loading={loading}
+//         scroll={{ y: 470 }}
+//         pagination={{
+//           current: currentPage,
+//           pageSize,
+//           total: data?.getIncidents.totalCount,
+//           onChange: (page, pageSize) => {
+//             setCurrentPage(page);
+//             setPageSize(pageSize);
+//           },
+//         }}
+//       />
+//     </div>
+//   );
+// };
+
+// export default IncidentsTable;
